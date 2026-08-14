@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoxCore — AI Video Intelligence</title>
+  <meta name="description" content="Paste any YouTube URL and chat with the video using AI. VoxCore transcribes, indexes, and answers your questions with RAG + Llama." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- ── Animated background canvas ── -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- ── App shell ── -->
+  <div class="app-shell">
+
+    <!-- Header -->
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="13" stroke="url(#lg1)" stroke-width="2"/>
+            <path d="M8 14 Q11 8 14 14 Q17 20 20 14" stroke="url(#lg1)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+            <defs>
+              <linearGradient id="lg1" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </span>
+        <span class="logo-text">Vox<span class="logo-accent">Core</span></span>
+      </div>
+      <p class="tagline">AI Video Intelligence — Ask anything about any YouTube video</p>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <!-- ── Left column: Input + Progress + Video Info ── -->
+      <section class="left-column">
+
+        <!-- URL Input Card -->
+        <div class="card url-card" id="url-card">
+          <div class="card-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8h12a2 2 0 012 2v4a2 2 0 01-2 2H3a2 2 0 01-2-2v-4a2 2 0 012-2z"/>
+            </svg>
+            YouTube URL
+          </div>
+          <div class="url-input-row">
+            <input
+              id="yt-url"
+              type="url"
+              class="url-input"
+              placeholder="https://www.youtube.com/watch?v=..."
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="process-btn" class="process-btn" onclick="startPipeline()">
+              <span class="btn-text">Process</span>
+              <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              <span class="btn-spinner" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-dasharray="40" stroke-dashoffset="40">
+                    <animate attributeName="stroke-dashoffset" values="40;0;40" dur="1.5s" repeatCount="indefinite"/>
+                  </path>
+                </svg>
+              </span>
+            </button>
+          </div>
+          <p class="url-hint">Supports any public YouTube video. Processing may take a few minutes.</p>
+        </div>
+
+        <!-- Pipeline Progress Card -->
+        <div class="card progress-card" id="progress-card" style="display:none">
+          <div class="card-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Pipeline Progress
+          </div>
+          <ul class="steps-list" id="steps-list">
+            <li class="step-item" id="step-1" data-step="1">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v4l3 3"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Download Audio</span>
+                <span class="step-msg" id="msg-1">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-1"></span>
+            </li>
+            <li class="step-item" id="step-2" data-step="2">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6M3 15h6"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Convert to WAV</span>
+                <span class="step-msg" id="msg-2">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-2"></span>
+            </li>
+            <li class="step-item" id="step-3" data-step="3">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Normalize Audio</span>
+                <span class="step-msg" id="msg-3">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-3"></span>
+            </li>
+            <li class="step-item" id="step-4" data-step="4">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Remove Silence (VAD)</span>
+                <span class="step-msg" id="msg-4">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-4"></span>
+            </li>
+            <li class="step-item" id="step-5" data-step="5">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Transcribe (Whisper)</span>
+                <span class="step-msg" id="msg-5">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-5"></span>
+            </li>
+            <li class="step-item" id="step-6" data-step="6">
+              <span class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
+              <div class="step-body">
+                <span class="step-name">Build RAG Index</span>
+                <span class="step-msg" id="msg-6">Waiting...</span>
+              </div>
+              <span class="step-badge" id="badge-6"></span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Video Info Card (revealed after done) -->
+        <div class="card video-info-card" id="video-info-card" style="display:none">
+          <div class="video-meta">
+            <img id="video-thumb" class="video-thumb" src="" alt="Video thumbnail" />
+            <div class="video-details">
+              <h2 id="video-title" class="video-title"></h2>
+              <div class="video-stats">
+                <span class="stat-pill" id="stat-duration">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  --:--
+                </span>
+                <span class="stat-pill" id="stat-chunks">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  0 chunks
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="transcript-preview-wrap">
+            <p class="preview-label">Transcript Preview</p>
+            <p id="transcript-preview" class="transcript-preview"></p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Right column: Chat ── -->
+      <section class="right-column">
+        <div class="chat-panel card" id="chat-panel">
+
+          <!-- Chat header -->
+          <div class="chat-header">
+            <div class="chat-header-info">
+              <span class="chat-avatar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+              </span>
+              <div>
+                <p class="chat-title">VoxCore Chat</p>
+                <p class="chat-subtitle" id="chat-subtitle">Process a video to begin</p>
+              </div>
+            </div>
+            <div class="chat-status-dot" id="chat-status-dot"></div>
+          </div>
+
+          <!-- Messages area -->
+          <div class="messages-area" id="messages-area">
+            <div class="welcome-msg" id="welcome-msg">
+              <div class="welcome-icon">
+                <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="13" stroke="url(#wlg)" stroke-width="1.5"/>
+                  <path d="M8 14 Q11 8 14 14 Q17 20 20 14" stroke="url(#wlg)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  <defs>
+                    <linearGradient id="wlg" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#7c3aed"/>
+                      <stop offset="100%" stop-color="#06b6d4"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <p class="welcome-title">Chat with your video</p>
+              <p class="welcome-body">Paste a YouTube URL on the left and click <strong>Process</strong>. Once indexed, ask any question about the video content.</p>
+              <div class="example-queries">
+                <p class="examples-label">Example questions</p>
+                <button class="example-chip" onclick="fillExample(this)">Summarize the entire video</button>
+                <button class="example-chip" onclick="fillExample(this)">What are the key takeaways?</button>
+                <button class="example-chip" onclick="fillExample(this)">Explain the main concepts discussed</button>
+                <button class="example-chip" onclick="fillExample(this)">What conclusions were drawn?</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input bar -->
+          <div class="chat-input-bar" id="chat-input-bar">
+            <textarea
+              id="chat-input"
+              class="chat-textarea"
+              placeholder="Ask anything about the video..."
+              rows="1"
+              disabled
+              onkeydown="handleChatKey(event)"
+              oninput="autoResize(this)"
+            ></textarea>
+            <button id="send-btn" class="send-btn" disabled onclick="sendMessage()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Error toast -->
+    <div class="toast" id="toast" role="alert"></div>
+
+  </div><!-- /app-shell -->
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
