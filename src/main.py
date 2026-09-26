@@ -1,9 +1,12 @@
 import torch
+
 from download import download_audio
 from convert import convert_to_wav
 from normalize import normalize_audio
-from vad import remove_silence_vad, timestamps_to_seconds
+from vad import remove_silence_vad
 from transcribe import transcribe_audio
+from summarizer import summarize_video
+
 
 def preprocess_audio(youtube_url):
     print("=" * 60)
@@ -17,7 +20,9 @@ def preprocess_audio(youtube_url):
     normalized_audio = normalize_audio(wav_file)
 
     print("Removing silence...")
-    clean_audio, timestamps = remove_silence_vad(normalized_audio)
+    clean_audio, timestamps = remove_silence_vad(
+        normalized_audio
+    )
 
     print("=" * 60)
     print("Audio preprocessing completed!")
@@ -27,35 +32,93 @@ def preprocess_audio(youtube_url):
         "title": metadata["title"],
         "duration": metadata["duration"],
         "clean_audio": clean_audio,
-        "timestamps": timestamps_to_seconds(timestamps),
-        "metadata": metadata
+        "timestamps": timestamps,
+        "metadata": metadata,
     }
+
 
 def main():
     youtube_url = input("Enter The Youtube URL:")
-    
-    # GPU/CPU Detection
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print("CUDA Available:", torch.cuda.is_available())
+
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "cpu"
+    )
+
+    print(
+        "CUDA Available:",
+        torch.cuda.is_available()
+    )
+
     if device == "cuda":
-        print("GPU:", torch.cuda.get_device_name(0))
+        print(
+            "GPU:",
+            torch.cuda.get_device_name(0)
+        )
     else:
         print("Running on CPU")
 
-    # 1. Preprocess Pipeline
-    result = preprocess_audio(youtube_url)
-    
-    print("\nTitle:", result["title"])
-    print("Duration:", result["duration"], "seconds")
-    print("Clean Audio Path:", result["clean_audio"])
-    print("Sample Timestamps:", result["timestamps"][:5])
+    # --------------------------------------------------
+    # 1. Download + preprocess audio
+    # --------------------------------------------------
 
-    # 2. Transcription Pipeline
+    result = preprocess_audio(youtube_url)
+
+    print("\nTitle:", result["title"])
+
+    print(
+        "Duration:",
+        result["duration"],
+        "seconds"
+    )
+
+    print(
+        "Clean Audio Path:",
+        result["clean_audio"]
+    )
+
+    print(
+        "VAD Segments:",
+        len(result["timestamps"])
+    )
+
+    # --------------------------------------------------
+    # 2. Transcription
+    # --------------------------------------------------
+
     transcript, segments = transcribe_audio(
         result["clean_audio"],
         language="en",
-        device=device
+        device=device,
+        speech_timestamps=result["timestamps"],
     )
+
+    # --------------------------------------------------
+    # 3. Video summarization
+    # --------------------------------------------------
+
+    print("\n" + "=" * 60)
+    print("Generating video summary...")
+    print("=" * 60)
+
+    summary = summarize_video(
+        "downloads/transcript/transcript.json"
+    )
+
+    # --------------------------------------------------
+    # 4. Completed
+    # --------------------------------------------------
+
+    print("\n" + "=" * 60)
+    print("COMPLETE VIDEO PIPELINE FINISHED")
+    print("=" * 60)
+
+    print(
+        "\nSummary file:"
+        " downloads/transcript/video_summary.json"
+    )
+
 
 if __name__ == "__main__":
     main()

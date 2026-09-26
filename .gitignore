@@ -1,51 +1,72 @@
-# Byte-compiled / optimized / DLL files
+# =========================================================
+# Python
+# =========================================================
+
 __pycache__/
 *.py[cod]
 *$py.class
 
+# =========================================================
 # Virtual environments
+# =========================================================
+
 .venv/
 venv/
 env/
+ENV/
 
-# Environment variables
+# =========================================================
+# Environment variables / secrets
+# =========================================================
+
 .env
+.env.*
+!.env.example
 
-# Data directories (large files)
-data/audio/*
-data/embeddings/*
-data/index/*
-!data/audio/.gitkeep
-!data/embeddings/.gitkeep
-!data/index/.gitkeep
+# =========================================================
+# Generated VoxCore files
+# =========================================================
 
-# Model weights
-models/*
-!models/.gitkeep
+downloads/
 
-# Outputs
-outputs/summaries/*
-outputs/logs/*
-!outputs/summaries/.gitkeep
-!outputs/logs/.gitkeep
+# =========================================================
+# Jupyter
+# =========================================================
 
-# Transcripts (auto-generated)
-data/transcripts/*
-!data/transcripts/.gitkeep
+.ipynb_checkpoints/
 
-# IDE
+# =========================================================
+# IDE / Editor
+# =========================================================
+
 .vscode/
 .idea/
-*.code-workspace
 
-# OS
+# =========================================================
+# OS files
+# =========================================================
+
 .DS_Store
 Thumbs.db
 
-# Jupyter
-.ipynb_checkpoints/
+# =========================================================
+# Logs
+# =========================================================
 
-# Distribution / packaging
-dist/
+*.log
+
+# =========================================================
+# Python build artifacts
+# =========================================================
+
 build/
+dist/
 *.egg-info/
+
+# =========================================================
+# Testing / coverage
+# =========================================================
+
+.pytest_cache/
+.coverage
+htmlcov/
